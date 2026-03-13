@@ -1,0 +1,22 @@
+[
+  {"question":"كم قدمًا في المتر الواحد؟","correct_value":3.28,"time_limit":30,"close_tolerance":0.2,"mid_tolerance":1,"far_tolerance":2,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم يبلغ ارتفاع برج خليفة؟","correct_value":828,"time_limit":30,"close_tolerance":50,"mid_tolerance":150,"far_tolerance":300,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد السعرات الحرارية في وجبة بيغ ماك القياسية؟","correct_value":524,"time_limit":30,"close_tolerance":100,"mid_tolerance":200,"far_tolerance":300,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد صفحات القرآن الكريم؟","correct_value":604,"time_limit":30,"close_tolerance":10,"mid_tolerance":50,"far_tolerance":100,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد دول العالم؟","correct_value":195,"time_limit":30,"close_tolerance":5,"mid_tolerance":20,"far_tolerance":40,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"ما ترتيب المملكة العربية السعودية عالميًا من حيث المساحة؟","correct_value":13,"time_limit":30,"close_tolerance":1,"mid_tolerance":3,"far_tolerance":5,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"ما السرعة القصوى للفهد؟","correct_value":110,"time_limit":30,"close_tolerance":10,"mid_tolerance":20,"far_tolerance":30,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد الدول في قارة أوروبا؟","correct_value":44,"time_limit":30,"close_tolerance":2,"mid_tolerance":4,"far_tolerance":8,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم ريالًا سعوديًا يساوي الدولار الأسترالي؟","correct_value":2.67,"time_limit":30,"close_tolerance":0.5,"mid_tolerance":1,"far_tolerance":2,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"ما عمق أعمق نقطة في الأرض؟","correct_value":10984,"time_limit":30,"close_tolerance":500,"mid_tolerance":1000,"far_tolerance":2000,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم يبلغ ارتفاع أعلى جبل في المملكة العربية السعودية؟","correct_value":3015,"time_limit":30,"close_tolerance":200,"mid_tolerance":400,"far_tolerance":800,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"في أي سنة تأسست شركة هاينز؟","correct_value":1869,"time_limit":30,"close_tolerance":10,"mid_tolerance":30,"far_tolerance":50,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم سنة استمرت الخلافة في الأندلس؟","correct_value":781,"time_limit":30,"close_tolerance":20,"mid_tolerance":40,"far_tolerance":80,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"قبل كم سنة انقرضت الديناصورات؟","correct_value":66000000,"time_limit":30,"close_tolerance":5000000,"mid_tolerance":10000000,"far_tolerance":20000000,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد العناصر في الجدول الدوري؟","correct_value":118,"time_limit":30,"close_tolerance":5,"mid_tolerance":10,"far_tolerance":20,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد أيام السنة الهجرية؟","correct_value":354,"time_limit":30,"close_tolerance":1,"mid_tolerance":4,"far_tolerance":6,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم لترًا في برميل النفط الخام؟","correct_value":159,"time_limit":30,"close_tolerance":10,"mid_tolerance":20,"far_tolerance":30,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد بوكيمون في الجيل الأول الأصلي؟","correct_value":151,"time_limit":30,"close_tolerance":5,"mid_tolerance":20,"far_tolerance":40,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد القطع في كرة القدم الكلاسيكية؟","correct_value":32,"time_limit":30,"close_tolerance":2,"mid_tolerance":4,"far_tolerance":8,"close_points":3,"mid_points":2,"far_points":1},
+  {"question":"كم عدد مفاتيح البيانو؟","correct_value":88,"time_limit":30,"close_tolerance":4,"mid_tolerance":12,"far_tolerance":24,"close_points":3,"mid_points":2,"far_points":1}
+]

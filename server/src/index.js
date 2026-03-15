@@ -511,8 +511,14 @@ function publicState() {
   };
 }
 
+let _emitScheduled = false;
 function emitState() {
-  io.emit("state", publicState());
+  if (_emitScheduled) return;
+  _emitScheduled = true;
+  queueMicrotask(() => {
+    _emitScheduled = false;
+    io.emit("state", publicState());
+  });
 }
 
 const app = express();
@@ -545,7 +551,14 @@ app.get("/test/questions", (_req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" },
+  transports: ["websocket", "polling"],
+  pingInterval: 10000,
+  pingTimeout: 5000,
+  httpCompression: true,
+  perMessageDeflate: false,
+});
 
 io.on("connection", (socket) => {
   socket.emit("state", publicState());
@@ -560,6 +573,12 @@ io.on("connection", (socket) => {
       p.socketId = socket.id;
       emitState();
       return ack?.({ ok: true, player: p });
+    }
+
+    // Prevent duplicate: if this socket already owns a player, return that player
+    const existingBySocket = Object.values(state.players).find((p) => p.socketId === socket.id);
+    if (existingBySocket) {
+      return ack?.({ ok: true, player: existingBySocket });
     }
 
     const id = nanoid(10);
@@ -1118,6 +1137,18 @@ io.on("connection", (socket) => {
     const p = state.players[playerId];
     if (!p) return ack?.({ ok: false });
     p.avatarKey = avatarKey || null;
+    emitState();
+    ack?.({ ok: true });
+  });
+
+  socket.on("host:kickPlayer", ({ playerId }, ack) => {
+    const p = state.players[playerId];
+    if (!p) return ack?.({ ok: false, error: "Player not found." });
+    if (p.socketId) {
+      const kickedSocket = io.sockets.sockets.get(p.socketId);
+      if (kickedSocket) kickedSocket.emit("kicked");
+    }
+    delete state.players[playerId];
     emitState();
     ack?.({ ok: true });
   });

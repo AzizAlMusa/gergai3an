@@ -19,7 +19,30 @@ const rawEstimation2 = fs.existsSync(estimation2Path) ? JSON.parse(fs.readFileSy
 const PORT = process.env.PORT || 3002;
 const TEAM_IDS = ["A", "B", "C"];
 const DIFFICULTIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-const AVATAR_KEYS = ["fawaz", "gannas", "tariq", "hamad", "tamimi", "mugeet", "haitham", "khalid", "maan", "mezail", "yousef", "talal", "abdulrahman", "abood", "fouzan", "aj", "omar", "osama", "hammad", "reda", "dhari"];
+const AVATAR_KEYS = [
+  "fawaz",
+  "gannas",
+  "tariq",
+  "hamad",
+  "tamimi",
+  "mugeet",
+  "haitham",
+  "khalid",
+  "maan",
+  "mezail",
+  "yousef",
+  "talal",
+  "abdulrahman",
+  "abood",
+  "fouzan",
+  "aj",
+  "omar",
+  "osama",
+  "hammad",
+  "reda",
+  "dhari",
+  "suhaib",
+];
 
 function slug(v) {
   return String(v || "")
@@ -57,7 +80,7 @@ const questions = rawQuestions.map((q, i) => ({
   answerImage: readMedia(q, "answer", "image"),
   answerAudio: readMedia(q, "answer", "audio"),
   answerVideo: readMedia(q, "answer", "video"),
-  hostNotes: q.host_notes || ""
+  hostNotes: q.host_notes || "",
 }));
 
 const allCategories = [...new Set(questions.map((q) => q.category))];
@@ -80,10 +103,10 @@ function initialRoundState() {
       resolved: false,
       awardedTeamId: null,
       awardedPoints: 0,
-      wasCorrect: null
+      wasCorrect: null,
     },
     actionSerial: 0,
-    lastAction: null
+    lastAction: null,
   };
 }
 
@@ -99,7 +122,7 @@ function mapEstimationQuestions(raw) {
     midPts: q.mid_points || 2,
     farPts: q.far_points || 1,
     image: q.question_image || q.image || null,
-    audio: q.question_audio || q.audio || null
+    audio: q.question_audio || q.audio || null,
   }));
 }
 
@@ -109,13 +132,13 @@ const estimationQuestions2 = mapEstimationQuestions(rawEstimation2);
 function initialState() {
   return {
     teams: {
-      A: { id: "A", name: "Team Bananas", color: "#FFD84D", score: 0 },
-      B: { id: "B", name: "Team Flamingos", color: "#FF8AD8", score: 0 },
-      C: { id: "C", name: "Team Rockets", color: "#7B6CFF", score: 0 }
+      A: { id: "A", name: "Team 1", color: "#FFD84D", score: 0 },
+      B: { id: "B", name: "Team 2", color: "#FF8AD8", score: 0 },
+      C: { id: "C", name: "Team 3", color: "#7B6CFF", score: 0 },
     },
     players: {},
     usedQuestionIds: [],
-  manuallyDisabledQuestions: {},
+    manuallyDisabledQuestions: {},
     phase: "lobby",
     mode: "question",
     roundNumber: 0,
@@ -132,7 +155,7 @@ function initialState() {
       allResultsRevealed: false,
       teamScores: { A: 0, B: 0, C: 0 },
       prizePools: { first: 30, second: 20, third: 10 },
-      timerSeconds: 30
+      timerSeconds: 30,
     },
     timers: {
       biddingSeconds: 20,
@@ -142,14 +165,14 @@ function initialState() {
       remaining: null,
       endsAt: null,
       startedAt: null,
-      hasStartedOnce: false
+      hasStartedOnce: false,
     },
     round: initialRoundState(),
     mediaControl: { serial: 0, command: null, side: null, src: null },
     imageMaximized: false,
     gameMode: "bidding",
     turnOrder: ["A", "B", "C"],
-    currentTurnIndex: 0
+    currentTurnIndex: 0,
   };
 }
 
@@ -303,10 +326,19 @@ function scoreEstimationRound(questionIndex) {
     if (!p) continue;
     const diff = Math.abs(est - answer);
     let zone, points;
-    if (diff <= q.closeTol) { zone = "close"; points = q.closePts; }
-    else if (diff <= q.midTol) { zone = "mid"; points = q.midPts; }
-    else if (diff <= q.farTol) { zone = "far"; points = q.farPts; }
-    else { zone = "out"; points = 0; }
+    if (diff <= q.closeTol) {
+      zone = "close";
+      points = q.closePts;
+    } else if (diff <= q.midTol) {
+      zone = "mid";
+      points = q.midPts;
+    } else if (diff <= q.farTol) {
+      zone = "far";
+      points = q.farPts;
+    } else {
+      zone = "out";
+      points = 0;
+    }
     results.push({ playerId, nickname: p.nickname, teamId: p.teamId, avatarKey: p.avatarKey || null, estimation: est, diff, zone, points });
   }
   return results;
@@ -379,7 +411,7 @@ function rankingBids() {
       teamName: state.teams[teamId].name,
       playerId: meta.playerId,
       bidderName: meta.bidderName,
-      bidderAvatarKey: meta.bidderAvatarKey || null
+      bidderAvatarKey: meta.bidderAvatarKey || null,
     }))
     .sort((a, b) => (b.bid !== a.bid ? b.bid - a.bid : a.elapsedMs - b.elapsedMs));
 }
@@ -418,12 +450,10 @@ function categoryStats() {
       remainingLevels: levels,
       remainingCount: levels.length,
       withheld: levels.length > 0 && levels.length < 3,
-      exhausted: levels.length === 0
+      exhausted: levels.length === 0,
     };
   });
 }
-
-
 
 function isBidAvailableForCurrentCategory(value) {
   if (!state.currentCategory) return true;
@@ -463,9 +493,7 @@ function publicState() {
     visibleCategory: state.blindMode ? null : state.currentCategory,
     round: {
       ...state.round,
-      bids: state.round.bidsRevealed
-        ? Object.fromEntries(Object.entries(state.round.bids).map(([k, v]) => [k, v.bid]))
-        : {},
+      bids: state.round.bidsRevealed ? Object.fromEntries(Object.entries(state.round.bids).map(([k, v]) => [k, v.bid])) : {},
       bidRanking: state.round.bidsRevealed ? rankingBids() : [],
       submittedCount: Object.keys(state.round.bids).length,
       expectedCount: TEAM_IDS.length,
@@ -473,7 +501,7 @@ function publicState() {
       bidHistory: state.round.bidHistory,
       playerAnswers: state.round.playerAnswers,
       activeBidTeamIndex: state.round.activeBidTeamIndex,
-      activeResponder: activeBidResponder()
+      activeResponder: activeBidResponder(),
     },
     selectedQuestion: state.selectedQuestion,
     scoreboard: TEAM_IDS.map((id) => state.teams[id]).sort((a, b) => b.score - a.score),
@@ -485,12 +513,16 @@ function publicState() {
       type: state.estimation.type,
       questions: state.estimation.questions.map((q, i) => ({
         prompt: q.prompt,
-        answer: (state.phase === "activity-round-result" || state.phase === "activity-final") ? q.answer : null,
-        closeTol: q.closeTol, midTol: q.midTol, farTol: q.farTol,
-        closePts: q.closePts, midPts: q.midPts, farPts: q.farPts,
+        answer: state.phase === "activity-round-result" || state.phase === "activity-final" ? q.answer : null,
+        closeTol: q.closeTol,
+        midTol: q.midTol,
+        farTol: q.farTol,
+        closePts: q.closePts,
+        midPts: q.midPts,
+        farPts: q.farPts,
         image: q.image || null,
         audio: q.audio || null,
-        index: i
+        index: i,
       })),
       currentIndex: state.estimation.currentIndex,
       submissions: state.estimation.submissions,
@@ -500,14 +532,14 @@ function publicState() {
       teamScores: state.estimation.teamScores,
       prizePools: state.estimation.prizePools,
       timerSeconds: state.estimation.timerSeconds,
-      totalQuestions: state.estimation.questions.length
+      totalQuestions: state.estimation.questions.length,
     },
     timers: state.timers,
     mediaControl: state.mediaControl,
     imageMaximized: state.imageMaximized,
     gameMode: state.gameMode,
     turnOrder: state.turnOrder,
-    currentTurnIndex: state.currentTurnIndex
+    currentTurnIndex: state.currentTurnIndex,
   };
 }
 
@@ -544,7 +576,7 @@ app.get("/test/questions", (_req, res) => {
       answerVideo: q.answerVideo,
       hostNotes: q.hostNotes,
       used: state.usedQuestionIds.includes(q.id),
-      disabled: Boolean(state.manuallyDisabledQuestions[questionKey(q.category, q.level)])
+      disabled: Boolean(state.manuallyDisabledQuestions[questionKey(q.category, q.level)]),
     });
   }
   res.json({ categories: Object.keys(byCategory).sort(), byCategory, blindMode: state.blindMode });
@@ -614,19 +646,17 @@ io.on("connection", (socket) => {
       bid: normalizedBid,
       elapsedMs,
       createdAt: Date.now(),
-      isCurrentForTeam: true
+      isCurrentForTeam: true,
     };
 
-    state.round.bidHistory = state.round.bidHistory.map((entry) =>
-      entry.teamId === p.teamId ? { ...entry, isCurrentForTeam: false } : entry
-    );
+    state.round.bidHistory = state.round.bidHistory.map((entry) => (entry.teamId === p.teamId ? { ...entry, isCurrentForTeam: false } : entry));
     state.round.bidHistory.push(historyEntry);
     state.round.bids[p.teamId] = {
       bid: normalizedBid,
       elapsedMs,
       playerId: p.id,
       bidderName: p.nickname,
-      bidderAvatarKey: p.avatarKey || null
+      bidderAvatarKey: p.avatarKey || null,
     };
 
     emitState();
@@ -641,7 +671,9 @@ io.on("connection", (socket) => {
     if (state.timers.activeType === "question" && !state.timers.running && state.timers.hasStartedOnce && state.timers.remaining <= 0) {
       return ack?.({ ok: false, error: "Time is up!" });
     }
-    const text = String(answer || "").trim().slice(0, 500);
+    const text = String(answer || "")
+      .trim()
+      .slice(0, 500);
     if (!text) return ack?.({ ok: false, error: "Answer cannot be empty." });
     const elapsedMs = state.timers.startedAt ? Date.now() - state.timers.startedAt : 0;
     state.round.playerAnswers.push({
@@ -652,7 +684,7 @@ io.on("connection", (socket) => {
       avatarKey: p.avatarKey || null,
       answer: text,
       elapsedMs,
-      createdAt: Date.now()
+      createdAt: Date.now(),
     });
     emitState();
     ack?.({ ok: true });
@@ -674,7 +706,7 @@ io.on("connection", (socket) => {
     if (state.mode !== "question") return ack?.({ ok: false, error: "Not a question round." });
     state.round = {
       ...initialRoundState(),
-      scoring: state.round.scoring
+      scoring: state.round.scoring,
     };
     state.round.biddingOpen = true;
     state.phase = "bidding";
@@ -717,7 +749,7 @@ io.on("connection", (socket) => {
       resolved: false,
       awardedTeamId: null,
       awardedPoints: 0,
-      wasCorrect: null
+      wasCorrect: null,
     };
     state.round.lastAction = null;
     state.round.actionSerial += 1;
@@ -744,7 +776,7 @@ io.on("connection", (socket) => {
       state.estimation.prizePools = {
         first: Number(prizePools.first) ?? 30,
         second: Number(prizePools.second) ?? 20,
-        third: Number(prizePools.third) ?? 10
+        third: Number(prizePools.third) ?? 10,
       };
     }
     emitState();
@@ -819,7 +851,15 @@ io.on("connection", (socket) => {
       const idx = state.estimation.currentIndex;
       const results = scoreEstimationRound(idx);
       const q = state.estimation.questions[idx];
-      state.estimation.roundResults.push({ questionIndex: idx, answer: q?.answer ?? 0, prompt: q?.prompt ?? "", results, closeTol: q?.closeTol, midTol: q?.midTol, farTol: q?.farTol });
+      state.estimation.roundResults.push({
+        questionIndex: idx,
+        answer: q?.answer ?? 0,
+        prompt: q?.prompt ?? "",
+        results,
+        closeTol: q?.closeTol,
+        midTol: q?.midTol,
+        farTol: q?.farTol,
+      });
       computeEstimationTeamScores();
       // Store cumulative score snapshot on each round result
       for (let ri = 0; ri < state.estimation.roundResults.length; ri++) {
@@ -918,7 +958,7 @@ io.on("connection", (socket) => {
         resolved: false,
         awardedTeamId: normalizedAction === "wrong" ? teamId || null : null,
         awardedPoints: normalizedAction === "wrong" ? penalty : 0,
-        wasCorrect: false
+        wasCorrect: false,
       };
       state.round.lastAction = normalizedAction;
       state.round.actionSerial += 1;
@@ -929,7 +969,13 @@ io.on("connection", (socket) => {
         state.currentTurnIndex = (state.currentTurnIndex + 1) % state.turnOrder.length;
       }
       emitState();
-      return ack?.({ ok: true, points: normalizedAction === "wrong" ? penalty : 0, awardedTeamId: normalizedAction === "wrong" ? teamId || null : null, action: normalizedAction, nextTeamId: hasNext ? ranked[nextIndex].teamId : null });
+      return ack?.({
+        ok: true,
+        points: normalizedAction === "wrong" ? penalty : 0,
+        awardedTeamId: normalizedAction === "wrong" ? teamId || null : null,
+        action: normalizedAction,
+        nextTeamId: hasNext ? ranked[nextIndex].teamId : null,
+      });
     }
 
     const points = reward;
@@ -941,7 +987,7 @@ io.on("connection", (socket) => {
       resolved: true,
       awardedTeamId: teamId || null,
       awardedPoints: points,
-      wasCorrect: true
+      wasCorrect: true,
     };
     state.round.lastAction = "correct";
     state.round.actionSerial += 1;
@@ -1006,7 +1052,6 @@ io.on("connection", (socket) => {
     ack?.({ ok: true, disabled: Boolean(state.manuallyDisabledQuestions[key]) });
   });
 
-
   socket.on("host:controlMedia", ({ side, command, mediaType }, ack) => {
     if (!state.selectedQuestion) return ack?.({ ok: false, error: "No active question." });
     const normalizedSide = side === "answer" ? "answer" : "question";
@@ -1022,7 +1067,7 @@ io.on("connection", (socket) => {
       command: command || "play",
       side: normalizedSide,
       mediaType: normalizedType,
-      src: src || null
+      src: src || null,
     };
     emitState();
     ack?.({ ok: true, src: src || null });
@@ -1030,12 +1075,7 @@ io.on("connection", (socket) => {
 
   socket.on("display:mediaEnded", ({ serial, side }, ack) => {
     if ((state.mediaControl?.serial || 0) !== serial) return ack?.({ ok: false });
-    if (
-      state.phase === "question" &&
-      side === "question" &&
-      state.selectedQuestion?.questionAudio &&
-      !state.timers.hasStartedOnce
-    ) {
+    if (state.phase === "question" && side === "question" && state.selectedQuestion?.questionAudio && !state.timers.hasStartedOnce) {
       startTimer("question", Number(state.timers.remaining ?? state.timers.questionSeconds) || state.timers.questionSeconds);
       emitState();
     }
@@ -1092,7 +1132,7 @@ io.on("connection", (socket) => {
         elapsedMs: idx * 1000,
         playerId: null,
         bidderName: state.teams[tid].name,
-        bidderAvatarKey: null
+        bidderAvatarKey: null,
       };
     });
     state.round.bidsRevealed = true;
@@ -1172,9 +1212,9 @@ io.on("connection", (socket) => {
 // Serve client build in production
 // Try multiple possible locations for client/dist (handles different CWDs on Railway)
 const possibleDists = [
-  path.join(__dirname, "../../client/dist"),       // from server/src/
-  path.join(process.cwd(), "client/dist"),          // from project root
-  path.join(process.cwd(), "../client/dist"),       // if CWD is server/
+  path.join(__dirname, "../../client/dist"), // from server/src/
+  path.join(process.cwd(), "client/dist"), // from project root
+  path.join(process.cwd(), "../client/dist"), // if CWD is server/
 ];
 let clientDist = null;
 for (const p of possibleDists) {

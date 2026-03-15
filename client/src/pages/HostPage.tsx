@@ -372,7 +372,6 @@ export function HostPage() {
                         <option key={key} value={key}>{key}</option>
                       ))}
                     </select>
-                    <button className="mini-btn kick-btn" title="Kick player" onClick={() => { if (confirm(`Kick ${p.nickname}?`)) socket.emit("host:kickPlayer", { playerId: p.id }); }}>✕</button>
                   </div>
                 </div>
               ))}

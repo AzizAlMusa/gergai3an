@@ -2,17 +2,11 @@
   "name": "trivia-night",
   "private": true,
   "version": "1.0.0",
-  "engines": {
-    "node": ">=18"
-  },
+  "engines": { "node": ">=18" },
   "scripts": {
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",
-    "build": "npm run build -w client",
+    "build": "node build.js",
     "start": "node server/src/index.js"
-  },
-  "workspaces": [
-    "client",
-    "server"
-  ]
+  }
 }

@@ -1,28 +1,41 @@
-# Trivia Night — Railway Deploy
+# Railway deploy
 
-This repo is set up to deploy on Railway with the root `Dockerfile`.
+This project is set up so Railway can deploy it from the repo root.
 
-## What Railway will do
-- Detect the root `Dockerfile`
-- Build the React client inside the image
-- Install the server dependencies
-- Start the app with `node server/src/index.js`
-- Health check the service at `/health`
+If you are replacing an older broken setup, remove these old files from the repo before pushing:
 
-## Deploy steps
-1. Push this project to GitHub.
-2. In Railway, create a new project from that GitHub repo.
-3. Railway will use the included `Dockerfile` automatically.
-4. Generate a public domain in **Networking**.
+- `Dockerfile`
+- `railway.toml`
+- `nixpacks.toml`
+- `render-build.sh`
+- `.dockerignore`
+- `.nvmrc`
 
-## Routes
-- `/join`
-- `/team`
-- `/host`
-- `/display`
-- `/health`
+## What Railway runs
 
-## Notes
-- Railway provides the `PORT` environment variable automatically.
-- The server already binds to `0.0.0.0` and reads `process.env.PORT`.
-- Static files are served from `client/dist` after the client build completes.
+Build command:
+
+```bash
+npm run build
+```
+
+Start command:
+
+```bash
+node server/src/index.js
+```
+
+These are defined in `railway.json`, so you do not need to add custom commands in the Railway dashboard.
+
+## Local check
+
+```bash
+npm run build
+npm start
+```
+
+Server health check:
+
+```bash
+http://localhost:3002/health
+```

@@ -6,8 +6,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "install:client": "npm ci --prefix client",
-    "install:server": "npm ci --prefix server --omit=dev",
+    "install:client": "npm install --prefix client",
+    "install:server": "npm install --prefix server --omit=dev",
     "build:client": "npm run build --prefix client",
     "build": "npm run install:client && npm run install:server && npm run build:client",
     "start": "node server/src/index.js"

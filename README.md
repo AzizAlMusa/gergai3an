@@ -1,44 +1,27 @@
-# Trivia Playful Live V4
+# Trivia Night
 
-## Local development
-
-Install dependencies and build the client:
+## Local run
 
 ```bash
 npm run build
-```
-
-Start the server:
-
-```bash
 npm start
 ```
 
-Default local server URL:
+Server: `http://localhost:3002`
 
-- http://localhost:3002
+## Railway
 
-## Railway deployment
+Push the repo as-is to Railway. The repo includes `railway.json`, which tells Railway to:
 
-This repository includes:
-
-- `Dockerfile` for deterministic Railway builds
-- `railway.toml` with a health check on `/health`
-- `package.json` scripts that install the nested `client` and `server` dependencies cleanly
-
-Railway will serve:
-
-- `/join`
-- `/team`
-- `/host`
-- `/display`
+- run `npm run build`
+- start with `node server/src/index.js`
+- check `/health`
 
 ## Question media
 
 Questions and answers can include optional media files. Save media under `client/public/media/` and reference them from `server/src/db/questions.json` with public paths such as `/media/questions/audio/example.mp3`.
 
 Supported optional JSON fields:
-
 - `question_image`
 - `question_audio`
 - `question_video`

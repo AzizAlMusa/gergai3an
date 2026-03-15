@@ -511,8 +511,14 @@ function publicState() {
   };
 }
 
+let _emitScheduled = false;
 function emitState() {
-  io.emit("state", publicState());
+  if (_emitScheduled) return;
+  _emitScheduled = true;
+  queueMicrotask(() => {
+    _emitScheduled = false;
+    io.emit("state", publicState());
+  });
 }
 
 const app = express();
@@ -545,7 +551,14 @@ app.get("/test/questions", (_req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, {
+  cors: { origin: "*" },
+  transports: ["websocket", "polling"],
+  pingInterval: 10000,
+  pingTimeout: 5000,
+  httpCompression: true,
+  perMessageDeflate: false,
+});
 
 io.on("connection", (socket) => {
   socket.emit("state", publicState());
@@ -554,12 +567,19 @@ io.on("connection", (socket) => {
     if (!nickname || !String(nickname).trim()) return ack?.({ ok: false, error: "Nickname is required." });
     if (!TEAM_IDS.includes(teamId)) return ack?.({ ok: false, error: "Invalid team." });
 
+    // Reconnect existing player by ID
     if (playerId && state.players[playerId]) {
       const p = state.players[playerId];
       p.nickname = String(nickname).trim().slice(0, 24);
       p.socketId = socket.id;
       emitState();
       return ack?.({ ok: true, player: p });
+    }
+
+    // Prevent duplicate: if this socket already owns a player, return that player
+    const existingBySocket = Object.values(state.players).find((p) => p.socketId === socket.id);
+    if (existingBySocket) {
+      return ack?.({ ok: true, player: existingBySocket });
     }
 
     const id = nanoid(10);
@@ -1122,6 +1142,19 @@ io.on("connection", (socket) => {
     ack?.({ ok: true });
   });
 
+  socket.on("host:kickPlayer", ({ playerId }, ack) => {
+    const p = state.players[playerId];
+    if (!p) return ack?.({ ok: false, error: "Player not found." });
+    // Notify the kicked player's socket before removing
+    if (p.socketId) {
+      const kickedSocket = io.sockets.sockets.get(p.socketId);
+      if (kickedSocket) kickedSocket.emit("kicked");
+    }
+    delete state.players[playerId];
+    emitState();
+    ack?.({ ok: true });
+  });
+
   socket.on("host:resetGame", (_p, ack) => {
     state = initialState();
     categoryCursor = -1;
@@ -1138,32 +1171,12 @@ io.on("connection", (socket) => {
   });
 });
 
-// Serve client build in production
-// Try multiple possible locations for client/dist (handles different CWDs on Railway)
-const possibleDists = [
-  path.join(__dirname, "../../client/dist"),       // from server/src/
-  path.join(process.cwd(), "client/dist"),          // from project root
-  path.join(process.cwd(), "../client/dist"),       // if CWD is server/
-];
-let clientDist = null;
-for (const p of possibleDists) {
-  const resolved = path.resolve(p);
-  const exists = fs.existsSync(resolved);
-  console.log(`[static] checking ${resolved} → ${exists ? "FOUND" : "not found"}`);
-  if (exists && !clientDist) clientDist = resolved;
-}
-
-if (clientDist) {
+// Serve client build in production (after `npm run build` in client/)
+const clientDist = path.join(__dirname, "../../client/dist");
+if (fs.existsSync(clientDist)) {
   app.use(express.static(clientDist));
   app.get("*", (_req, res) => res.sendFile(path.join(clientDist, "index.html")));
-  console.log(`[static] Serving client from ${clientDist}`);
-} else {
-  console.warn("[static] WARNING: client/dist not found! The app will not serve any frontend.");
-  console.warn("[static] CWD:", process.cwd(), " __dirname:", __dirname);
-  // Return a helpful error page instead of hanging
-  app.get("*", (_req, res) => {
-    res.status(503).send("Client build not found. Check build logs.");
-  });
+  console.log("Serving client from", clientDist);
 }
 
-server.listen(PORT, "0.0.0.0", () => console.log(`Trivia server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Trivia server running on http://localhost:${PORT}`));

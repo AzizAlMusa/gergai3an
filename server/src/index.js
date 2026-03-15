@@ -1138,12 +1138,32 @@ io.on("connection", (socket) => {
   });
 });
 
-// Serve client build in production (after `npm run build` in client/)
-const clientDist = path.join(__dirname, "../../client/dist");
-if (fs.existsSync(clientDist)) {
+// Serve client build in production
+// Try multiple possible locations for client/dist (handles different CWDs on Railway)
+const possibleDists = [
+  path.join(__dirname, "../../client/dist"),       // from server/src/
+  path.join(process.cwd(), "client/dist"),          // from project root
+  path.join(process.cwd(), "../client/dist"),       // if CWD is server/
+];
+let clientDist = null;
+for (const p of possibleDists) {
+  const resolved = path.resolve(p);
+  const exists = fs.existsSync(resolved);
+  console.log(`[static] checking ${resolved} → ${exists ? "FOUND" : "not found"}`);
+  if (exists && !clientDist) clientDist = resolved;
+}
+
+if (clientDist) {
   app.use(express.static(clientDist));
   app.get("*", (_req, res) => res.sendFile(path.join(clientDist, "index.html")));
-  console.log("Serving client from", clientDist);
+  console.log(`[static] Serving client from ${clientDist}`);
+} else {
+  console.warn("[static] WARNING: client/dist not found! The app will not serve any frontend.");
+  console.warn("[static] CWD:", process.cwd(), " __dirname:", __dirname);
+  // Return a helpful error page instead of hanging
+  app.get("*", (_req, res) => {
+    res.status(503).send("Client build not found. Check build logs.");
+  });
 }
 
 server.listen(PORT, "0.0.0.0", () => console.log(`Trivia server running on port ${PORT}`));

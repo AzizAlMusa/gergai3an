@@ -2,11 +2,14 @@
   "name": "trivia-night",
   "private": true,
   "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "install:client": "npm install --prefix client --include=dev",
-    "install:server": "npm install --prefix server --production",
+    "install:client": "npm ci --prefix client",
+    "install:server": "npm ci --prefix server --omit=dev",
     "build:client": "npm run build --prefix client",
-    "build": "npm run install:client && npm run build:client && npm run install:server",
+    "build": "npm run install:client && npm run install:server && npm run build:client",
     "start": "node server/src/index.js"
   }
 }

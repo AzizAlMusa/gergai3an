@@ -1,14 +1,14 @@
 {
-  "name": "trivia-playful-live-v4",
+  "name": "trivia-night",
   "private": true,
   "version": "1.0.0",
-  "workspaces": ["server", "client"],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "install:all": "npm install --workspaces",
-    "dev:server": "npm run dev -w server",
-    "dev:client": "npm run dev -w client",
-    "build": "cd client && npm install && npm run build",
-    "start": "cd server && node src/index.js",
-    "deploy": "npm run build && npm run start"
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client install && npm --prefix client run build && npm --prefix server install",
+    "start": "npm --prefix server run start"
   }
 }

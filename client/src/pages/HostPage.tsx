@@ -372,6 +372,7 @@ export function HostPage() {
                         <option key={key} value={key}>{key}</option>
                       ))}
                     </select>
+                    <button className="mini-btn danger" onClick={() => socket.emit("host:kickPlayer", { playerId: p.id })}>Kick</button>
                   </div>
                 </div>
               ))}

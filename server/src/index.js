@@ -20,6 +20,46 @@ const PORT = process.env.PORT || 3002;
 const TEAM_IDS = ["A", "B", "C"];
 const DIFFICULTIES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const AVATAR_KEYS = ["fawaz", "gannas", "tariq", "hamad", "tamimi", "mugeet", "haitham", "khalid", "maan", "mezail", "yousef", "talal", "abdulrahman", "abood", "fouzan", "aj", "omar", "osama", "hammad", "reda", "dhari"];
+const SOCKET_IO_OPTIONS = {
+  cors: { origin: "*" },
+  transports: ["websocket"],
+  perMessageDeflate: false,
+  httpCompression: false
+};
+
+function normalizeNickname(value) {
+  return String(value || "").trim().replace(/\s+/g, " ").slice(0, 24);
+}
+
+function findPlayerBySessionId(sessionId) {
+  if (!sessionId) return null;
+  return Object.values(state.players).find((player) => player.sessionId === sessionId) || null;
+}
+
+function removePlayer(playerId, reason = "removed") {
+  const player = state.players[playerId];
+  if (!player) return false;
+
+  if (player.socketId) {
+    io.to(player.socketId).emit("player:kicked", { reason });
+    const playerSocket = io.sockets.sockets.get(player.socketId);
+    playerSocket?.disconnect(true);
+  }
+
+  delete state.players[playerId];
+
+  state.round.playerAnswers = state.round.playerAnswers.filter((entry) => entry.playerId !== playerId);
+  state.round.bidHistory = state.round.bidHistory.filter((entry) => entry.playerId !== playerId);
+
+  Object.entries(state.round.bids).forEach(([teamId, bid]) => {
+    if (bid?.playerId === playerId) {
+      delete state.round.bids[teamId];
+    }
+  });
+
+  emitState();
+  return true;
+}
 
 function slug(v) {
   return String(v || "")
@@ -220,18 +260,26 @@ function runTimer(type, seconds, preserveStartedState = false) {
   state.timers.startedAt = Date.now();
   state.timers.endsAt = Date.now() + seconds * 1000;
   if (!preserveStartedState) state.timers.hasStartedOnce = true;
+  let lastRemaining = state.timers.remaining;
   timerInterval = setInterval(() => {
     const ms = Math.max(0, state.timers.endsAt - Date.now());
-    state.timers.remaining = Math.ceil(ms / 1000);
+    const nextRemaining = Math.ceil(ms / 1000);
+    const changed = nextRemaining !== lastRemaining;
+    state.timers.remaining = nextRemaining;
     if (ms <= 0) {
       clearInterval(timerInterval);
       timerInterval = null;
       state.timers.running = false;
       state.timers.remaining = 0;
       if (type === "bidding" && state.round.biddingOpen) revealBidsInternal();
+      emitState();
+      return;
     }
-    emitState();
-  }, 200);
+    if (changed) {
+      lastRemaining = nextRemaining;
+      emitState();
+    }
+  }, 100);
 }
 
 function startTimer(type, seconds) {
@@ -545,28 +593,43 @@ app.get("/test/questions", (_req, res) => {
 });
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, SOCKET_IO_OPTIONS);
 
 io.on("connection", (socket) => {
   socket.emit("state", publicState());
 
-  socket.on("player:join", ({ nickname, teamId, playerId }, ack) => {
-    if (!nickname || !String(nickname).trim()) return ack?.({ ok: false, error: "Nickname is required." });
+  socket.on("player:join", ({ nickname, teamId, playerId, sessionId }, ack) => {
+    const normalizedNickname = normalizeNickname(nickname);
+    const normalizedSessionId = String(sessionId || "").trim().slice(0, 120);
+
+    if (!normalizedNickname) return ack?.({ ok: false, error: "Nickname is required." });
     if (!TEAM_IDS.includes(teamId)) return ack?.({ ok: false, error: "Invalid team." });
+    if (!normalizedSessionId) return ack?.({ ok: false, error: "Missing session." });
+
+    const sessionPlayer = findPlayerBySessionId(normalizedSessionId);
+    if (sessionPlayer) {
+      sessionPlayer.nickname = normalizedNickname;
+      sessionPlayer.teamId = teamId;
+      sessionPlayer.socketId = socket.id;
+      emitState();
+      return ack?.({ ok: true, player: sessionPlayer, reused: true });
+    }
 
     if (playerId && state.players[playerId]) {
       const p = state.players[playerId];
-      p.nickname = String(nickname).trim().slice(0, 24);
+      p.nickname = normalizedNickname;
+      p.teamId = teamId;
       p.socketId = socket.id;
+      p.sessionId = p.sessionId || normalizedSessionId;
       emitState();
-      return ack?.({ ok: true, player: p });
+      return ack?.({ ok: true, player: p, reused: true });
     }
 
     const id = nanoid(10);
-    const p = { id, nickname: String(nickname).trim().slice(0, 24), teamId, socketId: socket.id, avatarKey: null };
+    const p = { id, nickname: normalizedNickname, teamId, socketId: socket.id, avatarKey: null, sessionId: normalizedSessionId };
     state.players[id] = p;
     emitState();
-    ack?.({ ok: true, player: p });
+    ack?.({ ok: true, player: p, reused: false });
   });
 
   socket.on("player:resume", ({ playerId }, ack) => {
@@ -1119,6 +1182,13 @@ io.on("connection", (socket) => {
     if (!p) return ack?.({ ok: false });
     p.avatarKey = avatarKey || null;
     emitState();
+    ack?.({ ok: true });
+  });
+
+  socket.on("host:kickPlayer", ({ playerId }, ack) => {
+    if (!playerId) return ack?.({ ok: false, error: "Missing player." });
+    const removed = removePlayer(playerId, "kicked");
+    if (!removed) return ack?.({ ok: false, error: "Player not found." });
     ack?.({ ok: true });
   });
 

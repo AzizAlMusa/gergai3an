@@ -1,24 +1,5 @@
-# dependencies
 node_modules/
-client/node_modules/
-server/node_modules/
-
-# builds
 client/dist/
-dist/
-
-# logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# system/editor
 .DS_Store
-.vscode/
-.idea/
-
-# env
 .env
-.env.*
-!.env.example

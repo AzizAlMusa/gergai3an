@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "build": "npm --prefix client install --include=dev && npm --prefix client run build && npm --prefix server install --omit=dev",
-    "start": "npm --prefix server run start"
+    "build": "cd client && npm run build",
+    "start": "cd server && npm run start"
   }
 }

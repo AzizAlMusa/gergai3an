@@ -1,9 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useApp } from "../state";
 import { socket } from "../socket";
 import { Shell } from "../components/Shell";
 import { StepBar } from "../components/StepBar";
 import { Avatar } from "../components/Avatar";
+import { SERVER_URL } from "../config";
+
+const HOST_AUTH_KEY = "trivia-host-auth-v1";
+
+function HostGate({ onAuthed }) {
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!password.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${SERVER_URL}/api/host-auth`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: password.trim() }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        sessionStorage.setItem(HOST_AUTH_KEY, JSON.stringify({ date: new Date().toISOString().slice(0, 10) }));
+        onAuthed();
+      } else {
+        setError(data.error || "Wrong password.");
+      }
+    } catch {
+      setError("Could not reach server.");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <Shell title="HOST ACCESS" kicker="Game Master">
+      <div className="card playful-card top-gap" style={{ maxWidth: 420, margin: "0 auto" }}>
+        <div className="eyebrow">Daily password required</div>
+        <p style={{ margin: "8px 0 16px", fontWeight: 700, opacity: 0.7 }}>Enter today's host password to access the game controls.</p>
+        <input
+          className="fun-input"
+          type="text"
+          placeholder="e.g. star-moon-42"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") submit(); }}
+          autoFocus
+        />
+        {error ? <div className="error-text">{error}</div> : null}
+        <div className="button-row">
+          <button className="fun-btn" onClick={submit} disabled={loading}>
+            {loading ? "Checking…" : "Enter"}
+          </button>
+        </div>
+      </div>
+    </Shell>
+  );
+}
 
 function diffColor(d) {
   const colors = ["#8CF2C3", "#A9F08A", "#D7F06E", "#FFE05D", "#FFCF5D", "#FFB95B", "#FF9A5B", "#FF7A63", "#6A6A6A", "#141414"];
@@ -37,6 +93,25 @@ function HostMediaControl({ src, side, label, mediaType }) {
 }
 
 export function HostPage() {
+  const [authed, setAuthed] = useState(false);
+
+  useEffect(() => {
+    const stored = sessionStorage.getItem(HOST_AUTH_KEY);
+    if (stored) {
+      try {
+        const { date } = JSON.parse(stored);
+        if (date === new Date().toISOString().slice(0, 10)) {
+          setAuthed(true);
+        }
+      } catch {}
+    }
+  }, []);
+
+  if (!authed) return <HostGate onAuthed={() => setAuthed(true)} />;
+  return <HostPageInner />;
+}
+
+function HostPageInner() {
   const { state } = useApp();
   const [activityTitle, setActivityTitle] = useState("Estimation Challenge");
   const [activityNotes, setActivityNotes] = useState("Closest answer wins.");
@@ -86,22 +161,25 @@ export function HostPage() {
           <>
             <div className="divider" />
             <div className="eyebrow">Turn order</div>
-            <div className="turn-order-row">
+            <div className="turn-order-column">
               {state.turnOrder.map((teamId, idx) => (
-                <div key={teamId} className="turn-order-chip" style={{ background: state.teams[teamId]?.color, border: idx === state.currentTurnIndex ? "3px solid var(--ink)" : "3px solid transparent", boxShadow: idx === state.currentTurnIndex ? "4px 4px 0 var(--ink)" : "none" }}>
+                <div key={teamId} className={`turn-order-chip-v ${idx === state.currentTurnIndex ? "turn-active" : ""}`} style={{ background: state.teams[teamId]?.color }}>
                   <span className="turn-order-num">{idx + 1}</span>
-                  <strong>{state.teams[teamId]?.name}</strong>
-                  <div className="button-row tight">
+                  <strong style={{ flex: 1 }}>{state.teams[teamId]?.name}</strong>
+                  <div className="button-row tight" style={{ marginTop: 0 }}>
                     {idx > 0 ? <button className="mini-btn" onClick={() => { const o = [...state.turnOrder]; [o[idx - 1], o[idx]] = [o[idx], o[idx - 1]]; socket.emit("host:setTurnOrder", { turnOrder: o }); }}>↑</button> : null}
                     {idx < state.turnOrder.length - 1 ? <button className="mini-btn" onClick={() => { const o = [...state.turnOrder]; [o[idx], o[idx + 1]] = [o[idx + 1], o[idx]]; socket.emit("host:setTurnOrder", { turnOrder: o }); }}>↓</button> : null}
                   </div>
                 </div>
               ))}
             </div>
-            <div className="button-row">
+            <div className="turn-controls-row">
               <button className="fun-btn alt" onClick={() => socket.emit("host:advanceTurn")}>Advance Turn</button>
+              <div className="turn-current-badge" style={{ background: state.teams[state.turnOrder[state.currentTurnIndex]]?.color }}>
+                <span className="turn-current-label">Now playing</span>
+                <strong className="turn-current-name">{state.teams[state.turnOrder[state.currentTurnIndex]]?.name}</strong>
+              </div>
             </div>
-            <div className="tiny-muted">Current turn: <strong>{state.teams[state.turnOrder[state.currentTurnIndex]]?.name}</strong></div>
           </>
         ) : null}
       </div>
@@ -130,11 +208,11 @@ export function HostPage() {
           <div className="timer-grid">
             <div>
               <label className="label">Bidding seconds</label>
-              <input className="fun-input" type="number" min="5" max="300" value={biddingSeconds} onChange={(e) => setBiddingSeconds(Number(e.target.value))} />
+              <input className="fun-input" type="text" inputMode="numeric" value={biddingSeconds} onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); if (raw === "") { setBiddingSeconds(""); return; } setBiddingSeconds(parseInt(raw, 10)); }} onBlur={() => { const n = parseInt(String(biddingSeconds), 10); if (isNaN(n) || n < 5) setBiddingSeconds(20); else if (n > 300) setBiddingSeconds(300); else setBiddingSeconds(n); }} />
             </div>
             <div>
               <label className="label">Question seconds</label>
-              <input className="fun-input" type="number" min="5" max="300" value={questionSeconds} onChange={(e) => setQuestionSeconds(Number(e.target.value))} />
+              <input className="fun-input" type="text" inputMode="numeric" value={questionSeconds} onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, ""); if (raw === "") { setQuestionSeconds(""); return; } setQuestionSeconds(parseInt(raw, 10)); }} onBlur={() => { const n = parseInt(String(questionSeconds), 10); if (isNaN(n) || n < 5) setQuestionSeconds(25); else if (n > 300) setQuestionSeconds(300); else setQuestionSeconds(n); }} />
             </div>
           </div>
           <div className="button-row">
@@ -280,20 +358,22 @@ export function HostPage() {
 
           <div className="divider" />
           <div className="eyebrow">Activity round</div>
-          <select className="fun-input" value={activityType} onChange={(e) => {
-            setActivityType(e.target.value);
-            const preset = ACTIVITY_PRESETS.find((a) => a.id === e.target.value);
-            if (preset && preset.id !== "custom") {
-              setActivityTitle(preset.title);
-              setActivityNotes(preset.notes);
-            }
-          }}>
-            {ACTIVITY_PRESETS.map((a) => (
-              <option key={a.id} value={a.id}>{a.label}</option>
-            ))}
-          </select>
-          <input className="fun-input" value={activityTitle} onChange={(e) => setActivityTitle(e.target.value)} placeholder="Activity title" />
-          <textarea className="fun-textarea" value={activityNotes} onChange={(e) => setActivityNotes(e.target.value)} placeholder="Activity notes" />
+          <div className="activity-fields-stack">
+            <select className="fun-input" value={activityType} onChange={(e) => {
+              setActivityType(e.target.value);
+              const preset = ACTIVITY_PRESETS.find((a) => a.id === e.target.value);
+              if (preset && preset.id !== "custom") {
+                setActivityTitle(preset.title);
+                setActivityNotes(preset.notes);
+              }
+            }}>
+              {ACTIVITY_PRESETS.map((a) => (
+                <option key={a.id} value={a.id}>{a.label}</option>
+              ))}
+            </select>
+            <input className="fun-input" value={activityTitle} onChange={(e) => setActivityTitle(e.target.value)} placeholder="Activity title" />
+            <textarea className="fun-textarea" value={activityNotes} onChange={(e) => setActivityNotes(e.target.value)} placeholder="Activity notes" />
+          </div>
 
           {(activityType === "estimation" || activityType === "estimation-2") ? (
             <>
@@ -322,62 +402,17 @@ export function HostPage() {
           </div>
 
           {state.mode === "activity" ? (
-            <div className="button-row">
-              <button className="fun-btn ghost" onClick={() => socket.emit("host:activityPrev")} disabled={state.phase === "activity-title"}>← Back</button>
-              <button className="fun-btn alt" onClick={() => socket.emit("host:activityNext")}>Next Step →</button>
-              <div className="tiny-muted">Phase: {state.phase} {state.estimation.currentIndex >= 0 ? `(Q${state.estimation.currentIndex + 1}/${state.estimation.totalQuestions})` : ""}</div>
-            </div>
-          ) : null}
-        </div>
-
-        <div className="host-bottom-row">
-          <div className="card playful-card">
-            <div className="eyebrow">Teams and scores</div>
-            {["A", "B", "C"].map((id) => (
-              <div className="host-team-row" key={id} style={{ background: state.teams[id].color }}>
-                <input className="team-input" defaultValue={state.teams[id].name} onBlur={(e) => socket.emit("host:renameTeam", { teamId: id, name: e.target.value })} />
-                <div className="host-score">{state.teams[id].score}</div>
-                <div className="button-row tight wrap">
-                  {[10, 5, -5, -10].map((n) => (
-                    <button key={n} className="mini-btn" onClick={() => socket.emit("host:award", { teamId: id, delta: n })}>
-                      {n > 0 ? `+${n}` : n}
-                    </button>
-                  ))}
-                </div>
+            <>
+              <div className="activity-phase-badge">
+                <span className="activity-phase-label">Phase</span>
+                <strong className="activity-phase-value">{state.phase.replaceAll("-", " ")} {state.estimation.currentIndex >= 0 ? `(Q${state.estimation.currentIndex + 1}/${state.estimation.totalQuestions})` : ""}</strong>
               </div>
-            ))}
-          </div>
-
-          <div className="card playful-card">
-            <div className="eyebrow">Players</div>
-            <div className="player-list">
-              {Object.values(state.players).map((p) => (
-                <div className="player-row" key={p.id}>
-                  <div className="player-main">
-                    <Avatar nickname={p.nickname} avatarKey={p.avatarKey} size={52} />
-                    <div>
-                      <strong>{p.nickname}</strong>
-                      <div className="tiny-muted">{state.teams[p.teamId].name}</div>
-                    </div>
-                  </div>
-                  <div className="player-controls">
-                    <select className="mini-select" value={p.teamId} onChange={(e) => socket.emit("host:movePlayer", { playerId: p.id, teamId: e.target.value })}>
-                      {["A", "B", "C"].map((id) => (
-                        <option key={id} value={id}>{state.teams[id].name}</option>
-                      ))}
-                    </select>
-                    <select className="mini-select" value={p.avatarKey || ""} onChange={(e) => socket.emit("host:setAvatar", { playerId: p.id, avatarKey: e.target.value || null })}>
-                      <option value="">No avatar</option>
-                      {state.avatarKeys.map((key) => (
-                        <option key={key} value={key}>{key}</option>
-                      ))}
-                    </select>
-                    <button className="mini-btn kick-btn" title="Kick player" onClick={() => { if (confirm(`Kick ${p.nickname}?`)) socket.emit("host:kickPlayer", { playerId: p.id }); }}>✕</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+              <div className="button-row">
+                <button className="fun-btn ghost" onClick={() => socket.emit("host:activityPrev")} disabled={state.phase === "activity-title"}>← Back</button>
+                <button className="fun-btn alt" onClick={() => socket.emit("host:activityNext")}>Next Step →</button>
+              </div>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -431,6 +466,23 @@ export function HostPage() {
       </div>
 
       <div className="card playful-card top-gap-xl">
+        <div className="eyebrow">Teams and scores</div>
+        {["A", "B", "C"].map((id) => (
+          <div className="host-team-row" key={id} style={{ background: state.teams[id].color }}>
+            <input className="team-input" defaultValue={state.teams[id].name} onBlur={(e) => socket.emit("host:renameTeam", { teamId: id, name: e.target.value })} />
+            <div className="host-score">{state.teams[id].score}</div>
+            <div className="button-row tight wrap">
+              {[10, 5, -5, -10].map((n) => (
+                <button key={n} className="mini-btn" onClick={() => socket.emit("host:award", { teamId: id, delta: n })}>
+                  {n > 0 ? `+${n}` : n}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="card playful-card top-gap-xl">
         <div className="eyebrow">Question bank status</div>
         <div className="category-grid">
           {state.categoryStats.map((c) => (
@@ -452,6 +504,37 @@ export function HostPage() {
                     </button>
                   );
                 })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="card playful-card top-gap-xl">
+        <div className="eyebrow">Players</div>
+        <div className="player-list">
+          {Object.values(state.players).map((p) => (
+            <div className="player-row" key={p.id}>
+              <div className="player-main">
+                <Avatar nickname={p.nickname} avatarKey={p.avatarKey} size={52} />
+                <div>
+                  <strong>{p.nickname}</strong>
+                  <div className="tiny-muted">{state.teams[p.teamId].name}</div>
+                </div>
+              </div>
+              <div className="player-controls">
+                <select className="mini-select" value={p.teamId} onChange={(e) => socket.emit("host:movePlayer", { playerId: p.id, teamId: e.target.value })}>
+                  {["A", "B", "C"].map((id) => (
+                    <option key={id} value={id}>{state.teams[id].name}</option>
+                  ))}
+                </select>
+                <select className="mini-select" value={p.avatarKey || ""} onChange={(e) => socket.emit("host:setAvatar", { playerId: p.id, avatarKey: e.target.value || null })}>
+                  <option value="">No avatar</option>
+                  {state.avatarKeys.map((key) => (
+                    <option key={key} value={key}>{key}</option>
+                  ))}
+                </select>
+                <button className="mini-btn kick-btn" title="Kick player" onClick={() => { if (confirm(`Kick ${p.nickname}?`)) socket.emit("host:kickPlayer", { playerId: p.id }); }}>✕</button>
               </div>
             </div>
           ))}

@@ -693,11 +693,25 @@
 }
 
 /* Turn mode UI */
-.turn-order-row{
+.turn-order-column{
   display:flex;
-  gap:10px;
-  flex-wrap:wrap;
+  flex-direction:column;
+  gap:8px;
   margin-top:8px;
+}
+.turn-order-chip-v{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 14px;
+  border-radius:16px;
+  font-size:14px;
+  border:3px solid transparent;
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.turn-order-chip-v.turn-active{
+  border-color:var(--ink);
+  box-shadow:4px 4px 0 var(--ink);
 }
 .turn-order-chip{
   display:flex;
@@ -716,6 +730,63 @@
   place-items:center;
   font-weight:900;
   font-size:12px;
+}
+.turn-controls-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-top:16px;
+  flex-wrap:wrap;
+}
+.turn-current-badge{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 16px;
+  border-radius:16px;
+  border:3px solid var(--ink);
+  box-shadow:4px 4px 0 var(--ink);
+}
+.turn-current-label{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  opacity:.7;
+}
+.turn-current-name{
+  font-size:16px;
+  font-weight:900;
+}
+/* Activity round field spacing */
+.activity-fields-stack{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+/* Activity phase badge */
+.activity-phase-badge{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:14px;
+  padding:10px 16px;
+  border:3px solid var(--ink);
+  border-radius:16px;
+  box-shadow:4px 4px 0 var(--ink);
+  background:linear-gradient(180deg,#fff,#f5f0e8);
+}
+.activity-phase-label{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  opacity:.6;
+}
+.activity-phase-value{
+  font-size:14px;
+  font-weight:900;
+  text-transform:capitalize;
 }
 .turn-pick-grid{
   display:grid;

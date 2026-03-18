@@ -403,8 +403,8 @@
     "level": 1,
     "sub_category": "",
     "format": "text",
-    "question": "كم ابنًا لروبرت براثيون؟",
-    "answer": "Smelly Cat",
+    "question": "ما اسم الفتى الذي يملك الالعاب في فيلم حكاية لعبة؟",
+    "answer": "Andy",
     "host_notes": null
   },
   {
@@ -498,7 +498,6 @@
     "question": "اذكر أربعة أسماء لشخصية يوسف الجراح الحجازية في طاش ما طاش",
     "answer": "اسعد عمر قلي - زكي طرطشلي - نجيب صفر لي - حسن كجاموغلي - سراج نكش - هشام صك الباب - سراج شقلطلي - علي ماصورة - القبطان سعسع - حامد فنك - باهي لفلفلي",
     "host_notes": null,
-    "question_image": "/media/questions/images/jarrah.png",
     "answer_video": "/media/answers/video/jarrah.mp4"
   },
   {
@@ -665,7 +664,7 @@
     "question": "ما الشيء المخفي في هذه الصورة؟",
     "answer": "nan",
     "host_notes": null,
-    "question_image": "/media/questions/images/stereogram3.jpg",
+    "question_image": "/media/questions/images/stereogram3.png",
     "answer_image": "/media/answers/images/stereogram3.png"
   },
   {
